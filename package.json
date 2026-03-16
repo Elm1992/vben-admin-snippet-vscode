@@ -1,0 +1,74 @@
+{
+  "name": "vben-admin-snippet-vscode",
+  "version": "0.0.1",
+  "publisher": "",
+  "displayName": "Vben Admin Snippet",
+  "description": "为 Vue Vben Admin 提供 VS Code 代码片段与智能补全。",
+  "license": "MIT",
+  "type": "module",
+  "author": {
+    "name": "Vben Admin Snippet Contributors"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Elm1992/vben-admin-snippet-vscode.git"
+  },
+  "homepage": "https://github.com/Elm1992/vben-admin-snippet-vscode",
+  "bugs": {
+    "url": "https://github.com/Elm1992/vben-admin-snippet-vscode/issues"
+  },
+  "engines": {
+    "vscode": "^1.90.0",
+    "node": ">=20.0.0"
+  },
+  "keywords": [
+    "vben",
+    "vue",
+    "snippet",
+    "completion",
+    "vscode-extension"
+  ],
+  "categories": [
+    "Programming Languages",
+    "Snippets"
+  ],
+  "files": [
+    "src",
+    "README.md",
+    "demo.gif",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "main": "./src/extension.js",
+  "activationEvents": [
+    "onLanguage:vue"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "vue",
+        "extensions": [
+          ".vue"
+        ]
+      }
+    ],
+    "commands": [
+      {
+        "command": "vbenAdminSnippet.openCurrentContextDocs",
+        "title": "Vben Admin Snippet：打开当前上下文文档",
+        "category": "Vben Admin Snippet"
+      }
+    ]
+  },
+  "scripts": {
+    "build": "echo 当前无需构建步骤",
+    "check": "node --check src/extension.js && node --check src/vben-data.js && node --check src/core/completion-provider.js && node --check src/core/completion-items.js && node --check src/core/script-context.js && node --check src/core/import-edits.js && node --check src/core/docs-links.js && node --check src/core/docs-command.js",
+    "package:vsix": "vsce package",
+    "publish:vsce": "vsce publish",
+    "prepublishOnly": "npm run check"
+  },
+  "devDependencies": {
+    "@vscode/vsce": "^3.7.1"
+  },
+  "packageManager": "pnpm@10.30.3+sha512.c961d1e0a2d8e354ecaa5166b822516668b7f44cb5bd95122d590dd81922f606f5473b6d23ec4a5be05e7fcd18e8488d47d978bbe981872f1145d06e9a740017"
+}
