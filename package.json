@@ -4,6 +4,7 @@
   "publisher": "",
   "displayName": "Vben Admin Snippet",
   "description": "为 Vue Vben Admin 提供 VS Code 代码片段与智能补全。",
+  "icon": "icon.png",
   "license": "MIT",
   "type": "module",
   "author": {
@@ -31,13 +32,6 @@
   "categories": [
     "Programming Languages",
     "Snippets"
-  ],
-  "files": [
-    "src",
-    "README.md",
-    "demo.gif",
-    "CHANGELOG.md",
-    "LICENSE"
   ],
   "main": "./src/extension.js",
   "activationEvents": [
