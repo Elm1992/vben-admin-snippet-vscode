@@ -26,18 +26,21 @@ function provideCompletionItems(document, position) {
   const inScript = isInsideVueScript(document, position);
   const prefixContext = getVbPrefixContext(document, position);
 
-  // vb-page: 完整 SFC 模板片段，仅在 script 块外可用。
-  if (prefixContext && !inScript) {
-    return VBEN_PAGE_TEMPLATE_SNIPPETS.filter((snippet) =>
-      snippet.prefix.startsWith(prefixContext.typedPrefix),
-    ).map((snippet) =>
-      createSnippetCompletionItem(
-        snippet,
-        prefixContext.range,
-        document,
-        position,
-      ),
-    );
+  // vb- 前缀命中时优先返回片段，避免进入后续较重的上下文扫描。
+  if (prefixContext) {
+    const snippets = inScript
+      ? VBEN_SCRIPT_SNIPPETS
+      : VBEN_PAGE_TEMPLATE_SNIPPETS;
+    return snippets
+      .filter((snippet) => snippet.prefix.startsWith(prefixContext.typedPrefix))
+      .map((snippet) =>
+        createSnippetCompletionItem(
+          snippet,
+          prefixContext.range,
+          document,
+          position,
+        ),
+      );
   }
 
   if (!inScript) {
@@ -102,21 +105,7 @@ function provideCompletionItems(document, position) {
         ),
       );
   }
-
-  if (!prefixContext) {
-    return [];
-  }
-
-  return VBEN_SCRIPT_SNIPPETS.filter((snippet) =>
-    snippet.prefix.startsWith(prefixContext.typedPrefix),
-  ).map((snippet) =>
-    createSnippetCompletionItem(
-      snippet,
-      prefixContext.range,
-      document,
-      position,
-    ),
-  );
+  return [];
 }
 
 function registerCompletionProvider(selector) {

@@ -19,6 +19,7 @@ const COMPONENT_DISPLAY_MAP = {
   alert: 'Vben 提示框',
   confirm: 'Vben 确认框',
   prompt: 'Vben 输入框',
+  VxeGridEvents: 'VxeGrid 事件',
   VxeGridProps: 'VxeGrid 配置',
   useVbenDrawer: 'Vben 抽屉',
   useVbenForm: 'Vben 表单',
@@ -42,6 +43,10 @@ function getOptionValueSnippet(functionName, optionName) {
     COMPONENT_OPTION_VALUE_SNIPPETS[functionName]?.[optionName];
   if (directSnippet) {
     return directSnippet;
+  }
+
+  if (functionName === 'VxeGridEvents') {
+    return '(params) => {\n    $1\n  }';
   }
 
   if (optionName.startsWith('on')) {
@@ -82,6 +87,28 @@ function getOptionValueSnippet(functionName, optionName) {
   return '$1';
 }
 
+function normalizeOptionValueSnippetIndentation(valueSnippet) {
+  if (!valueSnippet.includes('\n')) {
+    return valueSnippet;
+  }
+
+  const lines = valueSnippet.split('\n');
+  const followingLines = lines.slice(1);
+  const canDedentTwoSpaces = followingLines.every(
+    (line) => line.length === 0 || line.startsWith('  '),
+  );
+  if (!canDedentTwoSpaces) {
+    return valueSnippet;
+  }
+
+  return [
+    lines[0],
+    ...followingLines.map((line) =>
+      line.startsWith('  ') ? line.slice(2) : line,
+    ),
+  ].join('\n');
+}
+
 function createSnippetCompletionItem(snippet, range, document, position) {
   const body = stripLeadingImports(snippet.body);
   const additionalTextEdits = buildImportInsertionEdits(
@@ -111,7 +138,9 @@ function createSnippetCompletionItem(snippet, range, document, position) {
 
 function createOptionCompletionItem(functionName, name, range) {
   const description = getOptionDescription(functionName, name);
-  const valueSnippet = getOptionValueSnippet(functionName, name);
+  const valueSnippet = normalizeOptionValueSnippetIndentation(
+    getOptionValueSnippet(functionName, name),
+  );
   const docsUrl = getFunctionDocsUrl(functionName);
   const item = new vscode.CompletionItem(
     name,

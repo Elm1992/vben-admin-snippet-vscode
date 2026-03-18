@@ -1,8 +1,9 @@
 # Vben Admin Snippet
 
+> **重要：上下文智能补全必须在 vben 组件里按下 Enter（回车）才能触发。**
+
 ![Demo](./demo.gif)
 
-> **重要：上下文智能补全必须在 vben 组件里按下 Enter（回车）才能触发。**
 
 ## 功能特性
 
@@ -23,7 +24,6 @@
   - `alert({})`
   - `confirm({})`
   - `prompt({})`
-- 在 `const xxx: VxeGridProps = {}` 顶层对象中，支持属性补全与 `key: value` 片段插入（必须按 Enter / 回车触发上下文智能补全）。
 
 - 提供 API 方法补全：
   - `modalApi.`
