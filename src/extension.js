@@ -1,7 +1,8 @@
-﻿import * as vscode from 'vscode';
+import * as vscode from 'vscode';
 
 import { registerCompletionProvider } from './core/completion-provider.js';
 import { openCurrentContextDocs } from './core/docs-command.js';
+import { registerMethodIndexView } from './core/method-index.js';
 import {
   isPureEnterChange,
   shouldTriggerSuggestOnEnter,
@@ -29,6 +30,8 @@ function activate(context) {
     OPEN_DOCS_COMMAND_ID,
     openCurrentContextDocs,
   );
+
+  registerMethodIndexView(context);
 
   const enterListener = vscode.workspace.onDidChangeTextDocument((event) => {
     if (!isEnterTriggerSuggestEnabled()) {
