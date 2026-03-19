@@ -8,6 +8,14 @@ import {
 } from './core/script-context.js';
 
 const OPEN_DOCS_COMMAND_ID = 'vbenAdminSnippet.openCurrentContextDocs';
+const CONFIG_SECTION = 'vbenAdminSnippet';
+const CONFIG_ENABLE_ENTER_TRIGGER = 'enableEnterTriggerSuggest';
+
+function isEnterTriggerSuggestEnabled() {
+  return vscode.workspace
+    .getConfiguration(CONFIG_SECTION)
+    .get(CONFIG_ENABLE_ENTER_TRIGGER, true);
+}
 
 function activate(context) {
   const selector = [
@@ -23,6 +31,10 @@ function activate(context) {
   );
 
   const enterListener = vscode.workspace.onDidChangeTextDocument((event) => {
+    if (!isEnterTriggerSuggestEnabled()) {
+      return;
+    }
+
     const editor = vscode.window.activeTextEditor;
     if (!editor) {
       return;

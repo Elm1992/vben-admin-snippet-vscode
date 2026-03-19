@@ -1,6 +1,6 @@
 {
   "name": "vben-admin-snippet-vscode",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "",
   "displayName": "Vben Admin Snippet",
   "description": "为 Vue Vben Admin 提供 VS Code 代码片段与智能补全。",
@@ -52,7 +52,17 @@
         "title": "Vben Admin Snippet：打开当前上下文文档",
         "category": "Vben Admin Snippet"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "Vben Admin Snippet",
+      "properties": {
+        "vbenAdminSnippet.enableEnterTriggerSuggest": {
+          "type": "boolean",
+          "default": true,
+          "description": "控制是否在 Vue SFC <script> 的 Vben 组件配置上下文中按 Enter 时自动触发补全建议。"
+        }
+      }
+    }
   },
   "scripts": {
     "build": "echo 当前无需构建步骤",
