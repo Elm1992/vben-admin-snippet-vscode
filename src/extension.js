@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import { registerCompletionProvider } from './core/completion-provider.js';
 import { openCurrentContextDocs } from './core/docs-command.js';
 import { registerMethodIndexView } from './core/method-index.js';
+import { registerUpstreamCommitSyncCommand } from './core/upstream-sync-command.js';
 import {
   isPureEnterChange,
   shouldTriggerSuggestOnEnter,
@@ -32,6 +33,7 @@ function activate(context) {
   );
 
   registerMethodIndexView(context);
+  registerUpstreamCommitSyncCommand(context);
 
   const enterListener = vscode.workspace.onDidChangeTextDocument((event) => {
     if (!isEnterTriggerSuggestEnabled()) {

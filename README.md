@@ -1,38 +1,50 @@
 # Vben Admin Snippet
 
-> **重要：默认会在 vben 组件配置上下文里按下 Enter（回车）时自动触发补全；可通过配置关闭。**
+> Vue Vben Admin 工程辅助插件：智能补全、方法索引、上游 commit 安全同步。
 
-> **动态展示图（GIF）如下；看不了请访问：https://github.com/Elm1992/vben-admin-snippet-vscode/blob/main/demo.gif**
+> **默认会在 Vben 组件配置上下文里按 Enter 自动触发补全，可在配置中关闭。**
+
+## 简介
+
+- `智能片段与上下文补全`：输入 `vb-` 快速生成模板，在 Vben 调用上下文补全参数和 API。
+- `Vben Method Index`：侧边栏展示当前文件里的 Vben 方法/API，点击即跳转。
+- `上游 Commit 安全同步`：输入 `vbenjs/vue-vben-admin` 的 commit SHA 或 URL，仅在本地未改动时应用变更。
 
 ![Demo](./demo.gif)
-
+![Demo](./demo1.gif)
 ![Demo](./demo.png)
 
-## 功能特性
+## 详细功能
 
-- 在 Vue SFC 中输入 `vb-` 可触发片段：
-  - `vb-alert`
-  - `vb-confirm`
-  - `vb-prompt`
-  - `vb-modal`
-  - `vb-drawer`
-  - `vb-form`
-  - `vb-vxe-table`、
-  - `vb-page`（完整 SFC 模板，仅在 `<script>` 之外可用）
-- 在以下调用中提供上下文配置项补全：
-  - `useVbenForm({})`
-  - `useVbenModal({})`
-  - `useVbenDrawer({})`
-  - `useVbenVxeGrid({})`
-  - `alert({、】})`
-  - `confirm({})`
-  - `prompt({})`
+### 1) 智能片段与上下文补全
 
-- 提供 API 方法补全：
-  - `modalApi.`
-  - `drawerApi.`
-  - `formApi.`
-  - `gridApi.`
+- `vb-` 片段：`vb-alert`、`vb-confirm`、`vb-prompt`、`vb-modal`、`vb-drawer`、`vb-form`、`vb-vxe-table`、`vb-page`。
+- 上下文补全：`useVbenForm`、`useVbenModal`、`useVbenDrawer`、`useVbenVxeGrid`、`alert`、`confirm`、`prompt`。
+- API 补全：`modalApi.`、`drawerApi.`、`formApi.`、`gridApi.`。
+- 命令：`Vben Admin Snippet：打开当前上下文文档`。
+
+### 2) Vben Method Index（方法索引）
+
+- 侧边栏视图：`Vben Method Index`。
+- 展示当前 Vue 文件内的 Vben 方法/API/对象参数来源。
+- 点击条目可跳转；对象参数子项支持优先定位到变量定义。
+- 支持按行号或名称排序，支持刷新防抖。
+
+### 3) 上游 Commit 安全同步
+
+- 命令：`Vben Admin Snippet：同步上游 Commit（安全模式）`。
+- 仅支持 `vbenjs/vue-vben-admin`。
+- 支持普通 commit 和 merge commit（默认按第 1 个父提交对比）。
+- 仅当本地文件与父提交一致时才应用，避免覆盖二开改动。
+- `modified / removed` 使用严格文本匹配：除 `CRLF/LF` 换行差异会被归一化外，只要有任意字符差异（包括空格）就判定为本地已改动并跳过。
+- 当前支持 `added / modified / removed` 文本文件。
+- `renamed`、二进制、过大补丁会跳过并记录原因。
+- 输出面板：`Vben Admin Snippet: Upstream Sync`（含 `applied / skipped / failed` 明细）。
+
+输入示例：
+
+- `e4f6a0b1234567890abcdef1234567890abcdef`
+- `https://github.com/vbenjs/vue-vben-admin/commit/e4f6a0b1234567890abcdef1234567890abcdef`
 
 ## 配置项
 

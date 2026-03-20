@@ -14,10 +14,9 @@ const VBEN_METHOD_CALL_NAMES = [
   'useVbenModal',
   'useVbenDrawer',
   'useVbenVxeGrid',
-  'alert',
-  'confirm',
-  'prompt',
 ];
+const VBEN_IMPORT_GUARDED_METHOD_CALL_NAMES = ['alert', 'confirm', 'prompt'];
+const VBEN_IMPORT_SOURCE_PREFIXES = ['@vben/common-ui'];
 
 const VBEN_API_OBJECT_NAMES = ['modalApi', 'drawerApi', 'formApi', 'gridApi'];
 const VBEN_METHOD_OPTION_OBJECT_KEYS = {
@@ -34,6 +33,76 @@ const VBEN_METHOD_OPTION_OBJECT_KEYS = {
 
 function escapeRegExp(text) {
   return text.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
+}
+
+function isVbenImportSource(source) {
+  return VBEN_IMPORT_SOURCE_PREFIXES.some(
+    (prefix) => source === prefix || source.startsWith(`${prefix}/`),
+  );
+}
+
+function parseNamedImportSpecifier(specifierText) {
+  const cleanText = specifierText.trim();
+  if (!cleanText) {
+    return null;
+  }
+
+  const textWithoutType = cleanText.replace(/^type\s+/i, '').trim();
+  if (!textWithoutType) {
+    return null;
+  }
+
+  const match = /^([A-Z_$][\w$]*)(?:\s+as\s+([A-Z_$][\w$]*))?$/i.exec(
+    textWithoutType,
+  );
+  if (!match) {
+    return null;
+  }
+
+  const importedName = match[1];
+  const localName = match[2] || importedName;
+  return { importedName, localName };
+}
+
+function collectImportedVbenMethodAliasMap(text) {
+  const aliasMap = new Map(
+    VBEN_IMPORT_GUARDED_METHOD_CALL_NAMES.map((name) => [name, new Set()]),
+  );
+  const importPattern =
+    /^\s*import\s+(?!type\b)(?:[A-Z_$][\w$]*\s*,\s*)?\{\s*([\s\S]*?)\s*\}\s*from\s*['"]([^'"]+)['"]\s*;?/gm;
+
+  let match = importPattern.exec(text);
+  while (match) {
+    const source = match[2] || '';
+    if (!isVbenImportSource(source)) {
+      match = importPattern.exec(text);
+      continue;
+    }
+
+    const rawSpecifierText = (match[1] || '')
+      .replace(/\/\*[\s\S]*?\*\//g, ' ')
+      .replace(/\/\/.*$/gm, ' ');
+    const specifiers = rawSpecifierText
+      .split(',')
+      .map((part) => part.trim())
+      .filter(Boolean);
+
+    for (const specifier of specifiers) {
+      const parsedSpecifier = parseNamedImportSpecifier(specifier);
+      if (!parsedSpecifier) {
+        continue;
+      }
+      const aliasSet = aliasMap.get(parsedSpecifier.importedName);
+      if (!aliasSet) {
+        continue;
+      }
+      aliasSet.add(parsedSpecifier.localName);
+    }
+
+    match = importPattern.exec(text);
+  }
+
+  return aliasMap;
 }
 
 function isMethodIndexEnabled() {
@@ -215,17 +284,56 @@ function createMethodEntryWithMeta(
   };
 }
 
-function collectMethodCallEntries(maskedText, document) {
+function collectMethodCallEntries(
+  maskedText,
+  document,
+  importedMethodAliasMap,
+) {
   const entries = [];
 
   for (const methodName of VBEN_METHOD_CALL_NAMES) {
-    const pattern = new RegExp(String.raw`\b${escapeRegExp(methodName)}\s*\(`, 'g');
+    const pattern = new RegExp(
+      String.raw`\b${escapeRegExp(methodName)}\s*\(`,
+      'g',
+    );
     let match = pattern.exec(maskedText);
     while (match) {
       entries.push(
-        createMethodEntry(document, match.index, methodName, methodName, 'method'),
+        createMethodEntry(
+          document,
+          match.index,
+          methodName,
+          methodName,
+          'method',
+        ),
       );
       match = pattern.exec(maskedText);
+    }
+  }
+
+  for (const methodName of VBEN_IMPORT_GUARDED_METHOD_CALL_NAMES) {
+    const aliasSet = importedMethodAliasMap.get(methodName);
+    if (!aliasSet || aliasSet.size === 0) {
+      continue;
+    }
+    for (const localName of aliasSet) {
+      const pattern = new RegExp(
+        String.raw`\b${escapeRegExp(localName)}\s*\(`,
+        'g',
+      );
+      let match = pattern.exec(maskedText);
+      while (match) {
+        entries.push(
+          createMethodEntry(
+            document,
+            match.index,
+            localName,
+            methodName,
+            'method',
+          ),
+        );
+        match = pattern.exec(maskedText);
+      }
     }
   }
 
@@ -296,7 +404,11 @@ function findNearestDeclarationOffset(map, variableName, usageOffset) {
 }
 
 function findPairEndIndex(text, startIndex, openChar, closeChar) {
-  if (startIndex < 0 || startIndex >= text.length || text[startIndex] !== openChar) {
+  if (
+    startIndex < 0 ||
+    startIndex >= text.length ||
+    text[startIndex] !== openChar
+  ) {
     return -1;
   }
 
@@ -318,7 +430,11 @@ function findPairEndIndex(text, startIndex, openChar, closeChar) {
   return -1;
 }
 
-function findFirstArgumentObjectRange(maskedText, openParenIndex, closeParenIndex) {
+function findFirstArgumentObjectRange(
+  maskedText,
+  openParenIndex,
+  closeParenIndex,
+) {
   for (let i = openParenIndex + 1; i < closeParenIndex; i++) {
     const ch = maskedText[i];
     if (/\s/.test(ch)) {
@@ -499,12 +615,20 @@ function collectMethodOptionObjectEntries(maskedText, document) {
     VBEN_METHOD_OPTION_OBJECT_KEYS,
   )) {
     const optionNameSet = new Set(optionNames);
-    const pattern = new RegExp(String.raw`\b${escapeRegExp(methodName)}\s*\(`, 'g');
+    const pattern = new RegExp(
+      String.raw`\b${escapeRegExp(methodName)}\s*\(`,
+      'g',
+    );
     let match = pattern.exec(maskedText);
 
     while (match) {
       const openParenIndex = match.index + match[0].lastIndexOf('(');
-      const closeParenIndex = findPairEndIndex(maskedText, openParenIndex, '(', ')');
+      const closeParenIndex = findPairEndIndex(
+        maskedText,
+        openParenIndex,
+        '(',
+        ')',
+      );
       if (closeParenIndex === -1) {
         match = pattern.exec(maskedText);
         continue;
@@ -561,8 +685,9 @@ function collectVbenMethodEntries(document) {
   }
 
   const maskedText = maskCommentsAndStrings(text);
+  const importedMethodAliasMap = collectImportedVbenMethodAliasMap(text);
   const entries = [
-    ...collectMethodCallEntries(maskedText, document),
+    ...collectMethodCallEntries(maskedText, document, importedMethodAliasMap),
     ...collectApiMethodEntries(maskedText, document),
     ...collectMethodOptionObjectEntries(maskedText, document),
   ];
@@ -573,7 +698,8 @@ function collectVbenMethodEntries(document) {
 
   if (getMethodIndexSort() === 'name') {
     entries.sort(
-      (a, b) => a.label.localeCompare(b.label, 'zh-Hans-CN') || a.offset - b.offset,
+      (a, b) =>
+        a.label.localeCompare(b.label, 'zh-Hans-CN') || a.offset - b.offset,
     );
     return entries;
   }
@@ -636,7 +762,10 @@ function createMethodIndexTreeItems(entries) {
   const usedOptionKeys = new Set();
 
   for (const entry of entries) {
-    if (entry.kind !== 'option' || typeof entry.parentMethodOffset !== 'number') {
+    if (
+      entry.kind !== 'option' ||
+      typeof entry.parentMethodOffset !== 'number'
+    ) {
       continue;
     }
     const children = optionChildrenMap.get(entry.parentMethodOffset) || [];
@@ -674,7 +803,8 @@ function createMethodIndexTreeItems(entries) {
         const sortedChildren = [...children].sort((a, b) => {
           if (getMethodIndexSort() === 'name') {
             return (
-              a.label.localeCompare(b.label, 'zh-Hans-CN') || a.offset - b.offset
+              a.label.localeCompare(b.label, 'zh-Hans-CN') ||
+              a.offset - b.offset
             );
           }
           return a.offset - b.offset;
@@ -804,28 +934,34 @@ function registerMethodIndexView(context) {
       if (!activeEditor) {
         return;
       }
-      if (event.document.uri.toString() !== activeEditor.document.uri.toString()) {
+      if (
+        event.document.uri.toString() !== activeEditor.document.uri.toString()
+      ) {
         return;
       }
       scheduleRefresh();
     },
   );
-  const documentSavedListener = vscode.workspace.onDidSaveTextDocument((document) => {
-    const activeEditor = vscode.window.activeTextEditor;
-    if (!activeEditor) {
-      return;
-    }
-    if (document.uri.toString() !== activeEditor.document.uri.toString()) {
-      return;
-    }
-    scheduleRefresh();
-  });
-  const configChangedListener = vscode.workspace.onDidChangeConfiguration((event) => {
-    if (!event.affectsConfiguration(CONFIG_SECTION)) {
-      return;
-    }
-    scheduleRefresh();
-  });
+  const documentSavedListener = vscode.workspace.onDidSaveTextDocument(
+    (document) => {
+      const activeEditor = vscode.window.activeTextEditor;
+      if (!activeEditor) {
+        return;
+      }
+      if (document.uri.toString() !== activeEditor.document.uri.toString()) {
+        return;
+      }
+      scheduleRefresh();
+    },
+  );
+  const configChangedListener = vscode.workspace.onDidChangeConfiguration(
+    (event) => {
+      if (!event.affectsConfiguration(CONFIG_SECTION)) {
+        return;
+      }
+      scheduleRefresh();
+    },
+  );
 
   const timerDisposable = new vscode.Disposable(() => {
     if (!refreshTimer) {
